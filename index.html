@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Virtual Bar TikTok Overlay</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            width: 1080px;
+            height: 1920px;
+            overflow: hidden;
+            background-color: #05000a;
+            font-family: 'Montserrat', Arial, sans-serif;
+            color: #fff;
+        }
+
+        #app-scaler {
+            width: 1080px;
+            height: 1920px;
+            transform-origin: top left;
+            position: relative;
+        }
+
+        .club-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a0033 0%, #05000a 90%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* DJ BOOTH VIDEO NỀN */
+        .dj-stage-container {
+            position: relative;
+            width: 1040px;
+            height: 480px;
+            margin-top: 40px;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 3px solid #ec4899;
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.5);
+        }
+        .dj-background-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .dj-overlay-info {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            padding: 15px 25px;
+            text-align: center;
+        }
+        .header-title {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px #ec4899;
+        }
+        .current-track-text {
+            font-size: 22px;
+            color: #06b6d4;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        /* LAYER VIDEO HIỆU ỨNG (DANCER & RƯỢU) */
+        .effect-video-layer {
+            position: absolute;
+            top: 540px;
+            width: 1040px;
+            height: 380px;
+            z-index: 20;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+        }
+        .effect-video {
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            mix-blend-mode: screen; /* Tách nền đen hiệu ứng */
+        }
+        .effect-video.active {
+            display: block !important;
+        }
+
+        /* SƠ ĐỒ BÀN */
+        .floor-plan {
+            position: relative;
+            width: 1040px;
+            height: 980px;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+
+        /* BÀN VIP TRUNG TÂM (4 GHẾ) */
+        .vip-center-zone {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 440px; height: 340px;
+            border: 3px solid #f59e0b;
+            border-radius: 25px;
+            background: rgba(245, 158, 11, 0.15);
+            box-shadow: 0 0 35px rgba(245, 158, 11, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        .vip-title {
+            color: #fbbf24;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #f59e0b;
+            margin-bottom: 10px;
+        }
+        .vip-seats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px; width: 100%;
+        }
+        .vip-seat {
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px dashed #f59e0b;
+            border-radius: 12px;
+            padding: 10px; text-align: center;
+            min-height: 90px;
+        }
+        .vip-seat .seat-name {
+            font-size: 18px; font-weight: bold; color: #fff;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .vip-seat .seat-status { font-size: 13px; color: #fbbf24; margin-top: 4px; }
+
+        /* 10 BÀN THƯỜNG */
+        .regular-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            justify-content: space-between;
+            align-content: space-between;
+            height: 100%; width: 100%;
+        }
+        .table-card {
+            width: 250px; height: 145px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #06b6d4;
+            border-radius: 16px; padding: 12px;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+        .table-card.occupied {
+            border-color: #ec4899;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+            background: rgba(236, 72, 153, 0.15);
+        }
+        .table-header {
+            font-size: 18px; font-weight: bold; color: #06b6d4;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 4px; margin-bottom: 6px;
+        }
+        .table-card.occupied .table-header { color: #ec4899; }
+        .table-user {
+            font-size: 20px; font-weight: 800; color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .table-gift { font-size: 14px; color: #a7f3d0; margin-top: 4px; }
+
+        .pos-1, .pos-3, .pos-5, .pos-7, .pos-9 { justify-self: start; }
+        .pos-2, .pos-4, .pos-6, .pos-8, .pos-10 { justify-self: end; }
+
+        /* POPUP BANNER */
+        #alert-banner {
+            position: absolute; top: 42%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #f59e0b;
+            border-radius: 20px; padding: 25px 45px;
+            text-align: center; z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(245, 158, 11, 0.8);
+        }
+        #alert-banner.active { transform: translate(-50%, -50%) scale(1); }
+        #alert-title { font-size: 34px; color: #fbbf24; font-weight: 900; }
+        #alert-desc { font-size: 24px; color: #fff; margin-top: 8px; }
+
+        /* MENU HƯỚNG DẪN */
+        .gift-menu {
+            position: absolute; bottom: 30px; width: 1040px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px; padding: 14px;
+            display: flex; justify-content: space-around;
+            z-index: 20; font-size: 15px;
+        }
+        .menu-item span { color: #fbbf24; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="app-scaler">
+    <div class="club-stage">
+
+        <!-- THẺ ÂM THANH ẨN -->
+        <audio id="club-audio-player"></audio>
+
+        <!-- DJ BOOTH (VIDEO NỀN) -->
+        <div class="dj-stage-container">
+            <video class="dj-background-video" autoplay loop muted playsinline>
+                <source src="dj_video.mp4" type="video/mp4">
+            </video>
+            <div class="dj-overlay-info">
+                <div class="header-title">🔥 VIRTUAL NIGHTCLUB LIVE 🔥</div>
+                <div id="current-track" class="current-track-text">🎵 Now Playing: Sàn Quẩy Vinahouse (Default)</div>
+            </div>
+        </div>
+
+        <!-- LAYER VIDEO HIỆU ỨNG -->
+        <div class="effect-video-layer">
+            <video id="liquor-video" class="effect-video" muted playsinline>
+                <source src="liquor_video.mp4" type="video/mp4">
+            </video>
+            <video id="dancer-video" class="effect-video" muted playsinline>
+                <source src="dancer_video.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <!-- SƠ ĐỒ BÀN -->
+        <div class="floor-plan">
+            <!-- BÀN VIP TRUNG TÂM -->
+            <div class="vip-center-zone">
+                <div class="vip-title">👑 BÀN VIP ULTRA (CENTER)</div>
+                <div class="vip-seats-grid">
+                    <div class="vip-seat" id="vip-seat-1"><div class="seat-name">Trống</div><div class="seat-status">Ghế #1</div></div>
+                    <div class="vip-seat" id="vip-seat-2"><div class="seat-name">Trống</div><div class="seat-status">Ghế #2</div></div>
+                    <div class="vip-seat" id="vip-seat-3"><div class="seat-name">Trống</div><div class="seat-status">Ghế #3</div></div>
+                    <div class="vip-seat" id="vip-seat-4"><div class="seat-name">Trống</div><div class="seat-status">Ghế #4</div></div>
+                </div>
+            </div>
+
+            <!-- 10 BÀN THƯỜNG -->
+            <div class="regular-tables-grid">
+                <div class="table-card pos-1" id="tbl-1"><div class="table-header">Bàn 01</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-2" id="tbl-2"><div class="table-header">Bàn 02</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-3" id="tbl-3"><div class="table-header">Bàn 03</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-4" id="tbl-4"><div class="table-header">Bàn 04</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-5" id="tbl-5"><div class="table-header">Bàn 05</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-6" id="tbl-6"><div class="table-header">Bàn 06</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-7" id="tbl-7"><div class="table-header">Bàn 07</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-8" id="tbl-8"><div class="table-header">Bàn 08</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-9" id="tbl-9"><div class="table-header">Bàn 09</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+                <div class="table-card pos-10" id="tbl-10"><div class="table-header">Bàn 10</div><div class="table-user">Trống</div><div class="table-gift"></div></div>
+            </div>
+        </div>
+
+        <div id="alert-banner">
+            <div id="alert-title">EVENT TITLE</div>
+            <div id="alert-desc">Event Details</div>
+        </div>
+
+        <div class="gift-menu">
+            <div class="menu-item">🍸 <span>< 2k Coin</span>: Bàn Thường</div>
+            <div class="menu-item">👑 <span>≥ 2k Coin</span>: Bàn VIP Trung Tâm</div>
+            <div class="menu-item">🎵 <span>≥ 500 Coin</span>: Đổi Nhạc (Hàng Chờ)</div>
+            <div class="menu-item">🍾 <span>≥ 1k Coin</span>: Video Lên Rượu</div>
+            <div class="menu-item">💃 <span>≥ 5k Coin</span>: Video Dancer Nhảy</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function autoScale() {
+        const scaler = document.getElementById('app-scaler');
+        const scaleX = window.innerWidth / 1080;
+        const scaleY = window.innerHeight / 1920;
+        const scale = Math.min(scaleX, scaleY);
+        scaler.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', autoScale);
+    autoScale();
+
+    let currentRegularTableIndex = 1;
+    let currentVipSeatIndex = 1;
+
+    // HÀNG CHỜ PHÁT NHẠC
+    let musicQueue = [];
+    let isPlayingAudio = false;
+    const audioPlayer = document.getElementById('club-audio-player');
+
+    function enqueueMusic(songName, songUrl, username) {
+        musicQueue.push({ name: songName, url: songUrl, user: username });
+        showBanner("ĐÃ THÊM VÀO HÀNG CHỜ!", `${username} đặt bài: ${songName}`);
+        if (!isPlayingAudio) { playNextTrack(); }
+    }
+
+    function playNextTrack() {
+        if (musicQueue.length === 0) {
+            isPlayingAudio = false;
+            document.getElementById('current-track').innerText = `🎵 Now Playing: Sàn Quẩy Vinahouse (Default)`;
+            return;
+        }
+        isPlayingAudio = true;
+        const nextTrack = musicQueue.shift();
+        audioPlayer.src = nextTrack.url;
+        audioPlayer.play().catch(err => console.log("Cần click màn hình để cho phép phát âm thanh:", err));
+        document.getElementById('current-track').innerText = `🎵 Now Playing: ${nextTrack.name} (bởi ${nextTrack.user})`;
+    }
+
+    audioPlayer.onended = function() { playNextTrack(); };
+
+    function assignRegularTable(username, giftName) {
+        const tableCard = document.getElementById(`tbl-${currentRegularTableIndex}`);
+        tableCard.classList.add('occupied');
+        tableCard.querySelector('.table-user').innerText = username;
+        tableCard.querySelector('.table-gift').innerText = `🍸 ${giftName}`;
+        showBanner("BÀN MỚI CÓ KHÁCH!", `${username} lấy Bàn ${currentRegularTableIndex.toString().padStart(2, '0')}`);
+        currentRegularTableIndex++;
+        if (currentRegularTableIndex > 10) currentRegularTableIndex = 1;
+    }
+
+    function assignVipSeat(username, giftName) {
+        const seat = document.getElementById(`vip-seat-${currentVipSeatIndex}`);
+        seat.style.background = 'rgba(245, 158, 11, 0.4)';
+        seat.querySelector('.seat-name').innerText = username;
+        seat.querySelector('.seat-status').innerText = `🍾 ${giftName}`;
+        showBanner("👑 VIP SUPERSTAR!", `${username} bao Ghế VIP #${currentVipSeatIndex} trung tâm!`);
+        currentVipSeatIndex++;
+        if (currentVipSeatIndex > 4) currentVipSeatIndex = 1;
+    }
+
+    function playEffectVideo(videoId) {
+        const video = document.getElementById(videoId);
+        video.classList.add('active');
+        video.currentTime = 0;
+        video.play();
+        video.onended = function() { video.classList.remove('active'); };
+    }
+
+    function showBanner(title, desc) {
+        const banner = document.getElementById('alert-banner');
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-desc').innerText = desc;
+        banner.classList.add('active');
+        setTimeout(() => banner.classList.remove('active'), 4000);
+    }
+
+    // HỆ THẦN KINH ĐIỀU HƯỚNG QUÀ TẶNG THEO MỨC COIN
+    function handleTikTokGift(data) {
+        const username = data.nickname || data.uniqueId;
+        const giftName = data.giftName;
+        const coinValue = data.diamondCount || data.coins || 0;
+
+        if (coinValue >= 5000) {
+            playEffectVideo('dancer-video');
+            assignVipSeat(username, giftName);
+            showBanner("💃 SUPER DANCER!", `${username} kích hoạt Dancer người thật quẩy!`);
+        } else if (coinValue >= 2000) {
+            assignVipSeat(username, giftName);
+        } else if (coinValue >= 1000) {
+            playEffectVideo('liquor-video');
+            assignRegularTable(username, giftName);
+            showBanner("🍾 LÊN RƯỢU HOÀNG GIA!", `${username} gọi combo rượu pháo sáng!`);
+        } else if (coinValue >= 500) {
+            const trackUrl = data.songUrl || "nhac1.mp3"; 
+            enqueueMusic(`Bài hát của ${username}`, trackUrl, username);
+        } else {
+            assignRegularTable(username, giftName);
+        }
+    }
+</script>
+</body>
+</html>
